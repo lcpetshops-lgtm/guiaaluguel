@@ -13,18 +13,18 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [isSendingEmail, setIsSendingEmail] = useState<string | null>(null);
   
   const [settings, setSettings] = useState<PaymentSettings>({
-    id: 1, // Garantir ID inicial
-    pagbankEnabled: true,
-    pixEnabled: true,
-    apiKey: '',
-    pixKey: PIX_KEY,
-    pixQrCode: '',
-    emailEnabled: false,
-    emailServiceId: '',
-    emailTemplateId: '',
-    emailPublicKey: '',
-    ebookFileData: '',
-    ebookFileName: ''
+    id: 1,
+    pagbank_enabled: true,
+    pix_enabled: true,
+    api_key: '',
+    pix_key: PIX_KEY,
+    pix_qr_code: '',
+    email_enabled: false,
+    email_service_id: '',
+    email_template_id: '',
+    email_public_key: '',
+    ebook_file_data: '',
+    ebook_file_name: ''
   });
 
   useEffect(() => {
@@ -34,7 +34,6 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   async function loadAllData() {
     setLoading(true);
     try {
-      // Load Orders
       const { data: ordersData } = await supabase
         .from('orders')
         .select('*')
@@ -42,7 +41,6 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       
       if (ordersData) setOrders(ordersData);
 
-      // Load Settings
       const { data: settingsData } = await supabase
         .from('settings')
         .select('*')
@@ -62,21 +60,16 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const saveSettings = async () => {
     setIsSaving(true);
     try {
-      // Removemos o ID do spread para garantir que ele seja enviado explicitamente como 1
       const { id, ...dataToSave } = settings;
-      
       const { error } = await supabase
         .from('settings')
         .upsert({ id: 1, ...dataToSave }, { onConflict: 'id' });
       
-      if (error) {
-        throw error;
-      }
-      
+      if (error) throw error;
       alert('Configurações salvas com sucesso!');
     } catch (error: any) {
       console.error("Erro ao salvar:", error);
-      alert('Erro ao salvar no banco de dados: ' + (error.message || "Erro desconhecido"));
+      alert('Erro ao salvar no banco: ' + error.message);
     } finally {
       setIsSaving(false);
     }
@@ -85,18 +78,12 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'ebook' | 'pix') => {
     const file = e.target.files?.[0];
     if (file) {
-      // Limite de 5MB para Base64 no banco de dados para evitar problemas de performance
-      if (file.size > 5 * 1024 * 1024) {
-        alert("O arquivo é muito grande (Máx 5MB).");
-        return;
-      }
-
       const reader = new FileReader();
       reader.onloadend = () => {
         if (type === 'ebook') {
-          setSettings(prev => ({ ...prev, ebookFileData: reader.result as string, ebookFileName: file.name }));
+          setSettings(prev => ({ ...prev, ebook_file_data: reader.result as string, ebook_file_name: file.name }));
         } else {
-          setSettings(prev => ({ ...prev, pixQrCode: reader.result as string }));
+          setSettings(prev => ({ ...prev, pix_qr_code: reader.result as string }));
         }
       };
       reader.readAsDataURL(file);
@@ -115,15 +102,15 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   };
 
   const sendWhatsApp = (order: Order) => {
-    const message = `Olá ${order.customerName}! Pagamento aprovado. Use o código #${order.id} no site para baixar seu guia no Pendrive Virtual.`;
-    const url = `https://wa.me/55${order.customerPhone.replace(/\D/g,'')}?text=${encodeURIComponent(message)}`;
+    const message = `Olá ${order.name}! Pagamento aprovado. Use o código #${order.id} no site para baixar seu guia no Pendrive Virtual.`;
+    const url = `https://wa.me/55${order.phone.replace(/\D/g,'')}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
     updateStatus(order.id, 'SENT');
   };
 
   const sendEmail = async (order: Order) => {
-    if (!settings.emailEnabled || !settings.emailServiceId) {
-      alert("Configure o serviço de e-mail primeiro!");
+    if (!settings.email_enabled || !settings.email_service_id) {
+      alert("Ative e configure o e-mail primeiro nas configurações!");
       return;
     }
     setIsSendingEmail(order.id);
@@ -132,225 +119,224 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          service_id: settings.emailServiceId,
-          template_id: settings.emailTemplateId,
-          user_id: settings.emailPublicKey,
-          template_params: { to_name: order.customerName, to_email: order.customerEmail, order_id: order.id }
+          service_id: settings.email_service_id,
+          template_id: settings.email_template_id,
+          user_id: settings.email_public_key,
+          template_params: { 
+            to_name: order.name, 
+            to_email: order.email, 
+            order_id: order.id 
+          }
         })
       });
-      if (response.ok) { alert(`E-mail enviado!`); updateStatus(order.id, 'SENT'); }
-    } catch (error) { alert("Erro no envio."); } finally { setIsSendingEmail(null); }
+      if (response.ok) { 
+        alert(`E-mail enviado para ${order.email}!`); 
+        updateStatus(order.id, 'SENT'); 
+      } else {
+        const err = await response.text();
+        throw new Error(err);
+      }
+    } catch (error: any) { 
+      alert("Erro no envio: " + error.message); 
+    } finally { 
+      setIsSendingEmail(null); 
+    }
   };
 
   const filteredOrders = orders.filter(o => filter === 'ALL' ? true : o.status === filter);
 
-  if (loading) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">Sincronizando Banco de Dados...</p>
-      </div>
-    </div>
-  );
+  if (loading) return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-bold text-slate-400 italic tracking-widest">Sincronizando Banco...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       <nav className="bg-slate-900 text-white p-4 flex flex-col md:flex-row justify-between items-center px-8 gap-4 shadow-xl">
-        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
-          <h1 className="font-black text-xl tracking-tight">FLUXO LIMPO <span className="text-blue-500">ADMIN</span></h1>
-          <div className="flex bg-slate-800 p-1 rounded-xl">
-            <button onClick={() => setActiveTab('ORDERS')} className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'ORDERS' ? 'bg-blue-600 shadow-lg' : 'text-slate-400 hover:text-white'}`}>VENDAS</button>
-            <button onClick={() => setActiveTab('SETTINGS')} className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'SETTINGS' ? 'bg-blue-600 shadow-lg' : 'text-slate-400 hover:text-white'}`}>CONFIGURAÇÕES</button>
-          </div>
+        <h1 className="font-black text-xl tracking-tight uppercase italic">Fluxo Limpo <span className="text-blue-500">Admin</span></h1>
+        <div className="flex bg-slate-800 p-1 rounded-xl">
+          <button onClick={() => setActiveTab('ORDERS')} className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'ORDERS' ? 'bg-blue-600 shadow-lg text-white' : 'text-slate-400 hover:text-white'}`}>VENDAS</button>
+          <button onClick={() => setActiveTab('SETTINGS')} className={`px-6 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'SETTINGS' ? 'bg-blue-600 shadow-lg text-white' : 'text-slate-400 hover:text-white'}`}>CONFIGURAÇÕES</button>
         </div>
-        <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg text-xs font-black transition-all shadow-lg shadow-red-500/20 active:scale-95">SAIR DO PAINEL</button>
+        <button onClick={onClose} className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg text-xs font-black transition-all uppercase tracking-widest shadow-lg shadow-red-500/20">Sair</button>
       </nav>
 
       <main className="max-w-7xl mx-auto p-4 md:p-8">
         {activeTab === 'ORDERS' ? (
           <div className="space-y-4">
-             <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                {['ALL', 'PENDING', 'PAID', 'SENT'].map(f => (
-                  <button key={f} onClick={() => setFilter(f)} className={`px-4 py-2 rounded-full text-[10px] font-bold border transition-all ${filter === f ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200'}`}>
-                    {f === 'ALL' ? 'TODOS' : f === 'PENDING' ? 'PENDENTES' : f === 'PAID' ? 'PAGOS' : 'ENVIADOS'}
-                  </button>
-                ))}
+             <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                <div className="flex gap-2">
+                   {['ALL', 'PENDING', 'PAID', 'SENT'].map(f => (
+                     <button key={f} onClick={() => setFilter(f)} className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter transition-all ${filter === f ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        {f === 'ALL' ? 'Todos' : f === 'PENDING' ? 'Pendentes' : f === 'PAID' ? 'Pagos' : 'Enviados'}
+                     </button>
+                   ))}
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{filteredOrders.length} PEDIDOS</div>
              </div>
-             
-             <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-              <div className="overflow-x-auto">
+
+             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
                 <table className="w-full text-left border-collapse min-w-[900px]">
-                  <thead className="bg-slate-50/50 border-b">
+                  <thead className="bg-slate-50/50 border-b border-slate-100">
                     <tr>
-                      <th className="p-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Identificação</th>
-                      <th className="p-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Dados do Cliente</th>
-                      <th className="p-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Status Venda</th>
-                      <th className="p-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Controle</th>
+                      <th className="p-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Pedido</th>
+                      <th className="p-5 text-[10px] font-black uppercase text-slate-400 tracking-widest">Cliente / Contato</th>
+                      <th className="p-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Status</th>
+                      <th className="p-5 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Entrega</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredOrders.length === 0 ? (
-                      <tr><td colSpan={4} className="p-20 text-center text-slate-300 font-bold uppercase text-xs">Nenhum registro encontrado</td></tr>
-                    ) : filteredOrders.map(order => (
-                      <tr key={order.id} className="hover:bg-blue-50/30 transition-colors">
+                  <tbody className="divide-y divide-slate-50">
+                    {filteredOrders.map(order => (
+                      <tr key={order.id} className="hover:bg-blue-50/20 transition-colors">
                         <td className="p-5">
-                          <span className="font-mono text-xs font-black bg-slate-100 px-2 py-1 rounded text-slate-600">#{order.id}</span>
-                          <div className="text-[9px] text-slate-400 mt-1 font-bold">{order.date}</div>
+                          <span className="font-mono text-[11px] font-black bg-slate-100 px-2.5 py-1 rounded-lg text-slate-600">#{order.id}</span>
+                          <div className="text-[9px] text-slate-400 mt-1.5 font-bold uppercase tracking-tighter">{order.date}</div>
                         </td>
                         <td className="p-5">
-                          <div className="font-bold text-sm text-slate-800">{order.customerName}</div>
-                          <div className="flex gap-2 mt-1">
-                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 uppercase">{order.method}</span>
-                            <span className="text-[9px] text-slate-400 font-medium">{order.customerEmail}</span>
-                          </div>
+                          <div className="font-black text-slate-800 text-sm">{order.name}</div>
+                          <div className="text-[10px] text-slate-400 font-medium">{order.email}</div>
+                          <div className="text-[10px] text-blue-500 font-bold mt-0.5">{order.phone}</div>
                         </td>
                         <td className="p-5 text-center">
                           <select 
                             value={order.status} 
                             onChange={(e) => updateStatus(order.id, e.target.value as any)} 
-                            className={`text-[10px] font-black border-2 rounded-xl px-3 py-1.5 outline-none transition-all ${
-                              order.status === 'PAID' ? 'border-green-100 bg-green-50 text-green-700' : 
-                              order.status === 'SENT' ? 'border-blue-100 bg-blue-50 text-blue-700' : 
-                              'border-amber-100 bg-amber-50 text-amber-700'
-                            }`}
+                            className={`text-[10px] font-black border-2 rounded-xl px-3 py-1.5 outline-none bg-white transition-all ${order.status === 'PAID' ? 'border-green-100 text-green-600' : order.status === 'SENT' ? 'border-blue-100 text-blue-600' : 'border-amber-100 text-amber-600'}`}
                           >
-                            <option value="PENDING">🔴 AGUARDANDO</option>
-                            <option value="PAID">🟢 PAGO</option>
-                            <option value="SENT">🔵 ENTREGUE</option>
+                            <option value="PENDING">PENDENTE</option>
+                            <option value="PAID">PAGO</option>
+                            <option value="SENT">ENTREGUE</option>
                           </select>
                         </td>
                         <td className="p-5 text-right">
                           <div className="flex justify-end gap-2">
-                            <button onClick={() => sendWhatsApp(order)} className="p-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all shadow-lg shadow-green-500/20 active:scale-90">
-                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.012 2c-5.508 0-9.987 4.479-9.987 9.988 0 1.758.459 3.413 1.258 4.854l-1.336 4.887 4.996-1.312c1.408.766 3.012 1.204 4.717 1.204 5.508 0 9.988-4.479 9.988-9.988 0-5.508-4.48-9.988-9.988-9.988zm4.444 14.126c-.233.655-1.161 1.201-1.603 1.278-.442.077-.986.136-2.915-.628-2.469-.976-4.062-3.483-4.184-3.647-.122-.164-1.002-1.334-1.002-2.544 0-1.21.614-1.805.834-2.053.22-.248.479-.311.639-.311.16 0 .321.001.46.008.147.007.345-.056.54.412.2.48.68 1.659.74 1.782.06.122.1.265.02.424-.08.159-.121.259-.24.4-.12.141-.252.314-.36.421-.119.119-.244.25-.104.492.14.241.62 1.02 1.33 1.652.916.815 1.688 1.067 1.93 1.187.241.12.381.101.522-.058.14-.16.602-.701.761-.94.161-.241.32-.201.541-.12.221.08 1.402.661 1.643.782.24.121.401.181.46.281.06.1.06.579-.173 1.234z"/></svg>
+                            <button 
+                              onClick={() => sendWhatsApp(order)} 
+                              title="Enviar pelo WhatsApp"
+                              className="p-3 bg-green-500 text-white rounded-xl shadow-md hover:bg-green-600 active:scale-90 transition-all"
+                            >
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.483 8.413-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.308 1.654zm6.249-4.081c1.533.91 3.109 1.389 4.691 1.389 5.432.001 9.851-4.419 9.853-9.851.001-2.632-1.025-5.106-2.887-6.969-1.862-1.861-4.336-2.885-6.967-2.885-5.433 0-9.851 4.418-9.853 9.851-.001 1.734.456 3.426 1.321 4.9l-.83 3.033 3.102-.814zm11.378-7.514c-.301-.151-1.78-.878-2.057-.979-.277-.101-.478-.151-.679.151-.201.301-.778.979-.954 1.18-.176.202-.352.227-.653.076-.301-.151-1.272-.469-2.422-1.495-.894-.798-1.497-1.783-1.673-2.084-.176-.301-.019-.465.132-.614.135-.135.301-.351.452-.527.151-.176.201-.301.301-.502.101-.201.05-.377-.025-.527-.075-.151-.679-1.635-.93-2.239-.245-.588-.493-.508-.679-.518-.176-.008-.377-.01-.578-.01-.201 0-.527.075-.803.377-.276.301-1.054 1.03-1.054 2.513 0 1.482 1.079 2.912 1.23 3.113.151.201 2.124 3.243 5.145 4.544.718.309 1.28.494 1.716.632.723.23 1.381.197 1.9.12.579-.086 1.78-.728 2.031-1.431.251-.704.251-1.307.176-1.432-.075-.125-.276-.201-.577-.352z"/></svg>
                             </button>
-                            <button onClick={() => sendEmail(order)} className={`p-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-90 ${isSendingEmail === order.id ? 'opacity-50' : ''}`}>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                            <button 
+                              disabled={!!isSendingEmail}
+                              onClick={() => sendEmail(order)} 
+                              title="Enviar por E-mail"
+                              className={`p-3 bg-blue-500 text-white rounded-xl shadow-md hover:bg-blue-600 active:scale-90 transition-all ${isSendingEmail === order.id ? 'opacity-50 animate-pulse' : ''}`}
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                             </button>
                           </div>
                         </td>
                       </tr>
                     ))}
+                    {filteredOrders.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="p-20 text-center text-slate-300 font-bold uppercase tracking-widest text-xs italic">Nenhum pedido encontrado</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
-              </div>
-            </div>
+             </div>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto space-y-8 pb-20">
-            {/* PAGBANK CONFIG */}
-            <section className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-6">
-                <div className="flex items-center gap-2">
-                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Status:</span>
-                   <button 
-                    onClick={() => setSettings({...settings, pagbankEnabled: !settings.pagbankEnabled})}
-                    className={`w-12 h-6 rounded-full relative transition-colors ${settings.pagbankEnabled ? 'bg-green-500' : 'bg-slate-200'}`}
-                   >
-                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.pagbankEnabled ? 'left-7' : 'left-1'}`}></div>
-                   </button>
-                </div>
+          <div className="max-w-4xl mx-auto space-y-8 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* GATEWAY & PIX */}
+            <section className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-5">
+                <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
               </div>
-              <h3 className="font-black mb-6 flex items-center gap-3 text-slate-800 text-lg">
-                <span className="p-2 bg-blue-100 text-blue-600 rounded-lg text-sm">💳</span>
-                Gateway PagBank
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-8 flex items-center gap-3">
+                <span className="w-8 h-8 bg-blue-600 text-white rounded-xl flex items-center justify-center text-xs">01</span>
+                Gateway de Pagamento & PIX
               </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Token / API Key de Produção</label>
-                  <input 
-                    type="password" 
-                    value={settings.apiKey} 
-                    onChange={e => setSettings({...settings, apiKey: e.target.value})} 
-                    className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm focus:border-blue-500 outline-none transition-all font-mono" 
-                    placeholder="Insira seu token do PagSeguro/PagBank" 
-                  />
-                  <p className="text-[10px] text-slate-400 mt-2">Este token é necessário para processar pagamentos via Cartão de Crédito.</p>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Token PagBank (API Key)</label>
+                  <input type="password" value={settings.api_key} onChange={e => setSettings({...settings, api_key: e.target.value})} className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm font-mono outline-none focus:border-blue-500 transition-all" placeholder="Seu Token PagBank" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Chave PIX Principal</label>
+                  <input type="text" value={settings.pix_key} onChange={e => setSettings({...settings, pix_key: e.target.value})} className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm font-bold outline-none focus:border-blue-500 transition-all" placeholder="CPF, Email ou Aleatória" />
+                </div>
+                <div className="md:col-span-2 space-y-3 p-6 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                     Upload do QR Code PIX (Imagem)
+                   </label>
+                   <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'pix')} className="text-xs file:bg-blue-600 file:text-white file:border-0 file:px-4 file:py-2 file:rounded-lg file:mr-4 file:font-bold hover:file:bg-blue-700 cursor-pointer" />
+                   {settings.pix_qr_code && <div className="mt-4"><img src={settings.pix_qr_code} className="w-24 h-24 rounded-lg border-2 border-white shadow-md object-contain bg-white" alt="Preview QR" /></div>}
                 </div>
               </div>
             </section>
 
-            {/* PIX CONFIG */}
-            <section className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 shadow-sm">
-              <h3 className="font-black mb-6 flex items-center gap-3 text-slate-800 text-lg">
-                <span className="p-2 bg-green-100 text-green-600 rounded-lg text-sm">⚡</span>
-                Recebimento via PIX
-              </h3>
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Chave PIX</label>
-                    <input type="text" value={settings.pixKey} onChange={e => setSettings({...settings, pixKey: e.target.value})} className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-sm focus:border-blue-500 outline-none transition-all" placeholder="CPF, E-mail ou Chave Aleatória" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Imagem QR Code</label>
-                    <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, 'pix')} className="w-full text-xs file:mr-4 file:py-2.5 file:px-6 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:bg-slate-900 file:text-white cursor-pointer" />
-                  </div>
+            {/* EMAIL SETTINGS */}
+            <section className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm">
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
+                  <span className="w-8 h-8 bg-blue-600 text-white rounded-xl flex items-center justify-center text-xs">02</span>
+                  Automação de E-mail (EmailJS)
+                </h3>
+                <button 
+                  onClick={() => setSettings({...settings, email_enabled: !settings.email_enabled})}
+                  className={`w-14 h-7 rounded-full transition-all relative ${settings.email_enabled ? 'bg-green-500' : 'bg-slate-200'}`}
+                >
+                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all ${settings.email_enabled ? 'left-8' : 'left-1'}`} />
+                </button>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Service ID</label>
+                  <input type="text" value={settings.email_service_id} onChange={e => setSettings({...settings, email_service_id: e.target.value})} className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm font-mono outline-none focus:border-blue-500 transition-all" placeholder="service_xxxx" />
                 </div>
-                <div className="flex flex-col items-center justify-center border-4 border-dashed rounded-[2rem] p-6 bg-slate-50 border-slate-100">
-                  <span className="text-[10px] font-black text-slate-300 uppercase mb-4 tracking-widest">Visualização QR Code</span>
-                  {settings.pixQrCode ? (
-                    <img src={settings.pixQrCode} className="w-32 h-32 object-contain bg-white p-3 rounded-2xl shadow-xl border border-white" alt="PIX Preview" />
-                  ) : (
-                    <div className="w-32 h-32 bg-slate-100/50 flex items-center justify-center text-[10px] text-slate-300 italic rounded-2xl">Vazio</div>
-                  )}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Template ID</label>
+                  <input type="text" value={settings.email_template_id} onChange={e => setSettings({...settings, email_template_id: e.target.value})} className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm font-mono outline-none focus:border-blue-500 transition-all" placeholder="template_xxxx" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Public Key (User ID)</label>
+                  <input type="text" value={settings.email_public_key} onChange={e => setSettings({...settings, email_public_key: e.target.value})} className="w-full border-2 border-slate-100 rounded-2xl p-4 text-sm font-mono outline-none focus:border-blue-500 transition-all" placeholder="pk_xxxx" />
                 </div>
               </div>
+              <p className="mt-4 text-[9px] text-slate-400 font-bold uppercase tracking-widest bg-slate-50 p-3 rounded-lg border border-slate-100 italic">
+                Nota: O sistema enviará o link automaticamente ao confirmar pagamento se o e-mail estiver ativado.
+              </p>
             </section>
-
-            {/* EBOOK CONFIG */}
-            <section className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 shadow-sm">
-              <h3 className="font-black mb-6 flex items-center gap-3 text-slate-800 text-lg">
-                <span className="p-2 bg-amber-100 text-amber-600 rounded-lg text-sm">📖</span>
-                Produto Digital (E-book)
+            
+            {/* PRODUCT FILE */}
+            <section className="bg-white p-8 rounded-[2.5rem] border-2 border-slate-100 shadow-sm">
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-8 flex items-center gap-3">
+                <span className="w-8 h-8 bg-blue-600 text-white rounded-xl flex items-center justify-center text-xs">03</span>
+                Arquivo do Produto (Guia PDF)
               </h3>
-              <div className="flex flex-col md:flex-row items-center gap-6 bg-slate-50 p-6 rounded-3xl">
-                <div className="flex-1 w-full">
-                  <input type="file" accept=".pdf,.epub" onChange={(e) => handleFileUpload(e, 'ebook')} className="w-full text-xs file:mr-4 file:py-3 file:px-8 file:rounded-2xl file:border-0 file:text-[10px] file:font-black file:bg-blue-600 file:text-white cursor-pointer shadow-lg shadow-blue-600/20" />
-                  <p className="text-[10px] text-slate-400 mt-4 font-bold uppercase tracking-tighter">O arquivo será armazenado com segurança no banco de dados.</p>
-                </div>
-                {settings.ebookFileName && (
-                  <div className="bg-white px-6 py-4 rounded-2xl border-2 border-green-100 flex items-center gap-3 shadow-sm">
-                    <span className="text-green-600 text-xs font-black truncate max-w-[200px]">{settings.ebookFileName}</span>
-                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center text-white text-[10px]">✓</div>
-                  </div>
+              <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-10 text-center">
+                <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm text-2xl">📄</div>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6">Arraste ou selecione o arquivo PDF do Guia</p>
+                <input type="file" accept="application/pdf" onChange={(e) => handleFileUpload(e, 'ebook')} className="text-xs file:bg-slate-900 file:text-white file:border-0 file:px-8 file:py-3 file:rounded-xl file:mr-4 file:font-black hover:file:bg-black cursor-pointer uppercase tracking-widest" />
+                {settings.ebook_file_name && (
+                   <div className="mt-6 flex items-center justify-center gap-2 bg-green-50 p-4 rounded-2xl border border-green-100">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <span className="text-[10px] text-green-600 font-black uppercase tracking-widest">Pronto: {settings.ebook_file_name}</span>
+                   </div>
                 )}
               </div>
             </section>
 
-            {/* EMAIL CONFIG */}
-            <section className="bg-white p-8 rounded-[2rem] border-2 border-slate-100 shadow-sm">
-              <h3 className="font-black mb-6 flex items-center gap-3 text-slate-800 text-lg">
-                <span className="p-2 bg-purple-100 text-purple-600 rounded-lg text-sm">📧</span>
-                Notificação por E-mail
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Service ID</label>
-                  <input type="text" value={settings.emailServiceId} onChange={e => setSettings({...settings, emailServiceId: e.target.value})} className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-xs focus:border-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Template ID</label>
-                  <input type="text" value={settings.emailTemplateId} onChange={e => setSettings({...settings, emailTemplateId: e.target.value})} className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-xs focus:border-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Public Key</label>
-                  <input type="text" value={settings.emailPublicKey} onChange={e => setSettings({...settings, emailPublicKey: e.target.value})} className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-4 text-xs focus:border-blue-500 outline-none" />
-                </div>
-              </div>
-              <div className="mt-6 flex items-center gap-3 bg-purple-50 p-4 rounded-2xl border border-purple-100">
-                 <input type="checkbox" checked={settings.emailEnabled} onChange={e => setSettings({...settings, emailEnabled: e.target.checked})} className="w-5 h-5 rounded-lg text-purple-600" />
-                 <span className="text-xs font-bold text-purple-800">Ativar envio automático de e-mail ao aprovar pagamento</span>
-              </div>
-            </section>
-
-            <button 
-              disabled={isSaving}
-              onClick={saveSettings} 
-              className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-[2rem] shadow-2xl shadow-blue-600/30 transition-all uppercase tracking-[0.2em] text-sm active:scale-95 mb-10 disabled:opacity-50`}
-            >
-              {isSaving ? 'Sincronizando com o Banco...' : 'SALVAR CONFIGURAÇÕES NO SUPABASE'}
-            </button>
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-50">
+               <button 
+                 disabled={isSaving} 
+                 onClick={saveSettings} 
+                 className="w-full bg-blue-600 text-white font-black py-6 rounded-[2.5rem] shadow-2xl shadow-blue-600/30 hover:bg-blue-700 active:scale-95 transition-all uppercase tracking-widest text-sm flex items-center justify-center gap-3 border-4 border-white"
+               >
+                 {isSaving ? (
+                   <>
+                     <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                     SINCRONIZANDO...
+                   </>
+                 ) : (
+                   <>
+                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/></svg>
+                     SALVAR TODAS AS ALTERAÇÕES
+                   </>
+                 )}
+               </button>
+            </div>
           </div>
         )}
       </main>
