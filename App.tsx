@@ -5,11 +5,14 @@ import StickyCTA from './components/StickyCTA';
 import ConsultantDialog from './components/ConsultantDialog';
 import Checkout from './components/Checkout';
 import Dashboard from './components/Dashboard';
+import OrderTracker from './components/OrderTracker';
+import AdminLogin from './components/AdminLogin';
 import { Order } from './types';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<'LANDING' | 'CHECKOUT' | 'DASHBOARD' | 'SUCCESS'>('LANDING');
+  const [view, setView] = useState<'LANDING' | 'CHECKOUT' | 'DASHBOARD' | 'SUCCESS' | 'TRACKER' | 'ADMIN_LOGIN'>('LANDING');
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
   const handleBuy = (e?: React.MouseEvent) => {
     e?.preventDefault();
@@ -21,7 +24,26 @@ const App: React.FC = () => {
     setView('SUCCESS');
   };
 
-  if (view === 'DASHBOARD') return <Dashboard onClose={() => setView('LANDING')} />;
+  const handleAdminAccess = () => {
+    if (isAdminAuthenticated) {
+      setView('DASHBOARD');
+    } else {
+      setView('ADMIN_LOGIN');
+    }
+  };
+
+  const handleLoginSuccess = () => {
+    setIsAdminAuthenticated(true);
+    setView('DASHBOARD');
+  };
+
+  if (view === 'ADMIN_LOGIN') {
+    return <AdminLogin onLoginSuccess={handleLoginSuccess} onCancel={() => setView('LANDING')} />;
+  }
+
+  if (view === 'DASHBOARD') {
+    return <Dashboard onClose={() => setView('LANDING')} />;
+  }
 
   if (view === 'SUCCESS') {
     return (
@@ -31,12 +53,17 @@ const App: React.FC = () => {
           <h1 className="text-3xl font-black mb-4">Pedido Realizado!</h1>
           <p className="text-blue-100 mb-8 leading-relaxed">
             {lastOrder?.method === 'PIX' 
-              ? `Recebemos sua intenção de compra via PIX. Assim que validarmos o pagamento (Chave: ${lastOrder?.id}), enviaremos o guia para seu e-mail.`
-              : "Seu pagamento via PagBank foi aprovado! Em instantes você receberá o guia em seu e-mail e WhatsApp."}
+              ? `Recebemos sua intenção de compra via PIX. Anote seu código: #${lastOrder?.id}. Assim que validarmos o pagamento, seu guia será liberado.`
+              : "Seu pagamento via PagBank foi aprovado! Seu guia já está disponível no buscador de pedidos."}
           </p>
-          <button onClick={() => setView('LANDING')} className="bg-white text-blue-600 font-bold px-8 py-3 rounded-xl hover:bg-blue-50 transition-all">
-            VOLTAR PARA O SITE
-          </button>
+          <div className="flex flex-col gap-3">
+            <button onClick={() => setView('TRACKER')} className="bg-white text-blue-600 font-bold px-8 py-3 rounded-xl hover:bg-blue-50 transition-all">
+              ACOMPANHAR MEU PEDIDO
+            </button>
+            <button onClick={() => setView('LANDING')} className="text-white/60 text-sm hover:text-white transition-all">
+              Voltar para o site
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -47,9 +74,17 @@ const App: React.FC = () => {
       <StickyCTA onAction={handleBuy} />
       <ConsultantDialog />
 
-      {/* Admin Quick Access (Hidden link) */}
-      <div className="absolute top-2 right-2 opacity-0 hover:opacity-100 transition-opacity">
-        <button onClick={() => setView('DASHBOARD')} className="text-[8px] text-gray-400">ADMIN</button>
+      {view === 'TRACKER' && <OrderTracker onClose={() => setView('LANDING')} />}
+
+      {/* Admin Quick Access */}
+      <div className="absolute top-4 right-4 opacity-10 hover:opacity-100 transition-opacity z-50">
+        <button 
+          onClick={handleAdminAccess} 
+          className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-tighter"
+        >
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2-2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+          ADMIN
+        </button>
       </div>
 
       {view === 'CHECKOUT' && (
@@ -62,6 +97,13 @@ const App: React.FC = () => {
       {/* Hero Section */}
       <header className="relative bg-gradient-to-br from-slate-900 to-blue-900 text-white pt-16 pb-24 px-4 overflow-hidden">
         <div className="max-w-4xl mx-auto relative z-10 text-center">
+          <div className="mb-8">
+            <button onClick={() => setView('TRACKER')} className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full text-xs font-bold border border-white/10 transition-all">
+              <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              JÁ COMPROU? ACESSE SEU PEDIDO AQUI
+            </button>
+          </div>
+          
           <span className="inline-block bg-blue-500/30 text-blue-200 px-4 py-1 rounded-full text-sm font-bold mb-6 backdrop-blur-sm border border-blue-500/20">
             GUIA DEFINITIVO 2026
           </span>
@@ -217,7 +259,27 @@ const App: React.FC = () => {
       </section>
 
       <footer className="bg-slate-50 py-12 px-4 text-center border-t">
-        <p className="text-gray-400 text-sm">© 2026 - Guia de Declaração Segura</p>
+        <div className="max-w-4xl mx-auto">
+          <p className="text-gray-400 text-sm mb-6">© 2026 - Guia de Declaração Segura</p>
+          
+          <div className="flex flex-col md:flex-row justify-center gap-4">
+            <button 
+              onClick={() => setView('TRACKER')}
+              className="text-slate-600 hover:text-blue-600 text-xs flex items-center gap-2 mx-auto md:mx-0 border border-slate-200 px-6 py-2 rounded-full transition-all hover:bg-white font-bold"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              Já comprei? Acessar Guia
+            </button>
+
+            <button 
+              onClick={handleAdminAccess}
+              className="text-gray-400 hover:text-blue-600 text-xs flex items-center gap-2 mx-auto md:mx-0 border border-gray-200 px-4 py-2 rounded-full transition-all hover:bg-white"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2-2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+              Painel Administrativo
+            </button>
+          </div>
+        </div>
       </footer>
     </div>
   );
