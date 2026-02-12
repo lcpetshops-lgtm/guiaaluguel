@@ -37,6 +37,9 @@ const Checkout: React.FC<CheckoutProps> = ({ onSuccess, onCancel }) => {
       
       if (data && !error) {
         setSettings(data);
+        // Ajusta método inicial se um estiver desativado
+        if (!data.pixEnabled && data.pagbankEnabled) setMethod('PAGBANK');
+        if (data.pixEnabled && !data.pagbankEnabled) setMethod('PIX');
       }
     }
     loadSettings();
@@ -74,58 +77,95 @@ const Checkout: React.FC<CheckoutProps> = ({ onSuccess, onCancel }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/90 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-xl rounded-[2rem] overflow-hidden shadow-2xl">
-        <div className="bg-blue-600 p-6 text-white flex justify-between items-center">
-          <h2 className="text-lg font-bold">Checkout Seguro</h2>
-          <button onClick={onCancel} className="hover:bg-white/10 p-2 rounded-full transition-colors">✕</button>
+    <div className="fixed inset-0 bg-slate-900/90 z-[200] flex items-center justify-center p-4 backdrop-blur-md">
+      <div className="bg-white w-full max-w-xl rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white animate-in zoom-in-95 duration-300">
+        <div className="bg-blue-600 p-8 text-white flex justify-between items-center relative overflow-hidden">
+          <div className="relative z-10">
+             <h2 className="text-xl font-black uppercase tracking-tighter italic">Finalizar Compra</h2>
+             <p className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">Ambiente 100% Seguro</p>
+          </div>
+          <button onClick={onCancel} className="bg-white/10 hover:bg-white/20 p-3 rounded-full transition-all active:scale-90 z-10 font-bold">✕</button>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-xl"></div>
         </div>
 
-        <div className="p-8">
+        <div className="p-8 md:p-12">
           {step === 1 ? (
-            <form onSubmit={handleNext} className="space-y-4">
-              <h3 className="text-md font-bold text-slate-800">1. Seus Dados</h3>
-              <input required type="text" placeholder="Nome Completo" className="w-full border rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
-              <input required type="email" placeholder="E-mail" className="w-full border rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
-              <input required type="tel" placeholder="WhatsApp (DDD)" className="w-full border rounded-xl p-4 outline-none focus:ring-2 focus:ring-blue-500" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
-              <button type="submit" className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-all uppercase tracking-wider">Continuar para Pagamento</button>
-            </form>
-          ) : (
-            <div className="space-y-6">
-              <h3 className="text-md font-bold text-slate-800">2. Forma de Pagamento</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <button onClick={() => setMethod('PIX')} className={`p-4 border-2 rounded-2xl flex flex-col items-center transition-all ${method === 'PIX' ? 'border-blue-600 bg-blue-50' : 'border-gray-100'}`}>
-                  <span className="text-xl">⚡</span><span className="font-bold text-xs uppercase">PIX</span>
-                </button>
-                <button onClick={() => setMethod('PAGBANK')} className={`p-4 border-2 rounded-2xl flex flex-col items-center transition-all ${method === 'PAGBANK' ? 'border-blue-600 bg-blue-50' : 'border-gray-100'}`}>
-                  <span className="text-xl">💳</span><span className="font-bold text-xs uppercase">PAGBANK</span>
-                </button>
+            <form onSubmit={handleNext} className="space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                 <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-sm">1</div>
+                 <h3 className="text-md font-black text-slate-800 uppercase tracking-tight">Seus Dados de Acesso</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <input required type="text" placeholder="Nome Completo" className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-5 outline-none focus:border-blue-500 transition-all font-medium text-slate-700" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+                <input required type="email" placeholder="Seu melhor E-mail" className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-5 outline-none focus:border-blue-500 transition-all font-medium text-slate-700" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
+                <input required type="tel" placeholder="WhatsApp com DDD" className="w-full border-2 border-slate-100 bg-slate-50 rounded-2xl p-5 outline-none focus:border-blue-500 transition-all font-medium text-slate-700" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
               </div>
 
-              {method === 'PIX' && (
-                <div className="bg-slate-50 p-6 rounded-2xl text-center space-y-4">
-                  <p className="text-xs text-slate-500">Escaneie o QR Code ou copie a chave:</p>
-                  {settings.pixQrCode ? (
-                    <img src={settings.pixQrCode} className="w-40 h-40 mx-auto rounded-lg shadow-sm border p-2 bg-white" alt="QR Code PIX" />
-                  ) : (
-                    <div className="w-40 h-40 mx-auto flex items-center justify-center bg-gray-100 rounded-lg text-[10px] text-gray-400 italic border border-dashed">QR Code não disponível</div>
-                  )}
-                  <div className="bg-white border p-3 rounded-lg flex items-center justify-between text-xs font-mono">
-                    <span className="truncate mr-2">{settings.pixKey}</span>
-                    <button onClick={() => {navigator.clipboard.writeText(settings.pixKey); alert('Chave Copiada!');}} className="text-blue-600 font-bold uppercase">Copiar</button>
+              <button type="submit" className="w-full bg-blue-600 text-white font-black py-6 rounded-2xl hover:bg-blue-700 transition-all uppercase tracking-widest text-sm shadow-xl shadow-blue-600/20 active:scale-[0.98]">
+                Ir para o Pagamento
+              </button>
+            </form>
+          ) : (
+            <div className="space-y-8">
+              <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-sm">2</div>
+                 <h3 className="text-md font-black text-slate-800 uppercase tracking-tight">Escolha como pagar</h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {settings.pixEnabled && (
+                  <button onClick={() => setMethod('PIX')} className={`p-6 border-2 rounded-3xl flex flex-col items-center gap-3 transition-all relative ${method === 'PIX' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-200'}`}>
+                    <span className="text-3xl">⚡</span>
+                    <span className="font-black text-[10px] uppercase tracking-widest text-slate-600">PIX</span>
+                    {method === 'PIX' && <div className="absolute top-2 right-2 w-3 h-3 bg-blue-600 rounded-full"></div>}
+                  </button>
+                )}
+                
+                {settings.pagbankEnabled && (
+                  <button onClick={() => setMethod('PAGBANK')} className={`p-6 border-2 rounded-3xl flex flex-col items-center gap-3 transition-all relative ${method === 'PAGBANK' ? 'border-blue-600 bg-blue-50/50' : 'border-slate-100 hover:border-slate-200'}`}>
+                    <span className="text-3xl">💳</span>
+                    <span className="font-black text-[10px] uppercase tracking-widest text-slate-600">Cartão</span>
+                    {method === 'PAGBANK' && <div className="absolute top-2 right-2 w-3 h-3 bg-blue-600 rounded-full"></div>}
+                  </button>
+                )}
+              </div>
+
+              {method === 'PIX' ? (
+                <div className="bg-slate-50 p-6 rounded-[2rem] text-center space-y-5 border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="inline-block bg-white p-4 rounded-3xl shadow-lg border-2 border-slate-50">
+                    {settings.pixQrCode ? (
+                      <img src={settings.pixQrCode} className="w-44 h-44 mx-auto object-contain" alt="QR Code PIX" />
+                    ) : (
+                      <div className="w-44 h-44 mx-auto flex items-center justify-center bg-gray-100 rounded-2xl text-[10px] text-gray-400 italic font-bold">QR Code pendente</div>
+                    )}
                   </div>
-                  <p className="text-[10px] text-red-500 font-bold uppercase">O acesso será liberado após a validação do administrador.</p>
+                  
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Copia e Cola</p>
+                    <div className="bg-white border-2 border-slate-100 p-4 rounded-2xl flex items-center justify-between text-[11px] font-mono shadow-sm">
+                      <span className="truncate mr-4 text-slate-600">{settings.pixKey}</span>
+                      <button onClick={() => {navigator.clipboard.writeText(settings.pixKey); alert('Chave Copiada!');}} className="text-blue-600 font-black uppercase text-[10px] hover:underline">Copiar</button>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-red-500 font-black uppercase bg-red-50 py-2 rounded-lg">⚠️ Envio imediato após validação</p>
+                </div>
+              ) : (
+                <div className="bg-blue-50/50 p-8 rounded-[2rem] text-center border-2 border-blue-100 space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                   <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-2xl">🔐</div>
+                   <h4 className="font-black text-slate-800 text-sm uppercase">Segurança PagBank</h4>
+                   <p className="text-[11px] text-slate-500 leading-relaxed font-medium">Você será redirecionado para o ambiente seguro de cartões para concluir sua compra de <span className="text-blue-600 font-bold">{PRICE_DISCOUNT}</span>.</p>
                 </div>
               )}
 
               <div className="flex gap-4">
-                <button onClick={() => setStep(1)} className="flex-1 bg-gray-100 font-bold py-4 rounded-xl text-xs">VOLTAR</button>
+                <button onClick={() => setStep(1)} className="flex-1 bg-slate-100 text-slate-400 font-black py-5 rounded-2xl text-[10px] uppercase tracking-widest active:scale-95 transition-all">Voltar</button>
                 <button 
                   disabled={loading}
                   onClick={finishPayment} 
-                  className={`flex-[2] bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg uppercase text-xs ${loading ? 'opacity-50' : ''}`}
+                  className={`flex-[2] bg-green-600 text-white font-black py-5 rounded-2xl shadow-xl shadow-green-600/20 uppercase text-xs tracking-[0.2em] active:scale-95 transition-all ${loading ? 'opacity-50' : ''}`}
                 >
-                  {loading ? 'PROCESSANDO...' : 'Confirmar Pedido'}
+                  {loading ? 'PROCESSANDO...' : method === 'PIX' ? 'Confirmar PIX' : 'Pagar via Cartão'}
                 </button>
               </div>
             </div>
