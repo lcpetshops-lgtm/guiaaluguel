@@ -94,8 +94,25 @@ const App: React.FC = () => {
         />
       )}
 
+      {/* Main Navigation Bar */}
+      <nav className="absolute top-0 left-0 right-0 z-40 p-6 flex justify-between items-center max-w-7xl mx-auto">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <span className="text-white font-black text-xl tracking-tighter uppercase">
+            Fluxo Limpo <span className="text-blue-400">Tech</span>
+          </span>
+        </div>
+        <div className="hidden md:flex gap-4">
+          <button onClick={() => setView('TRACKER')} className="text-white/70 hover:text-white font-bold text-xs uppercase transition-colors tracking-widest">Acessar Pedido</button>
+        </div>
+      </nav>
+
       {/* Hero Section */}
-      <header className="relative bg-gradient-to-br from-slate-900 to-blue-900 text-white pt-16 pb-24 px-4 overflow-hidden">
+      <header className="relative bg-gradient-to-br from-slate-900 to-blue-900 text-white pt-32 pb-24 px-4 overflow-hidden">
         <div className="max-w-4xl mx-auto relative z-10 text-center">
           <div className="mb-8">
             <button onClick={() => setView('TRACKER')} className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full text-xs font-bold border border-white/10 transition-all">
@@ -281,7 +298,13 @@ const App: React.FC = () => {
 
       <footer className="bg-slate-50 py-12 px-4 text-center border-t">
         <div className="max-w-4xl mx-auto">
-          <p className="text-gray-400 text-sm mb-6">© 2026 - Guia de Declaração Segura</p>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-6 h-6 bg-slate-400 rounded-md flex items-center justify-center text-white">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            </div>
+            <span className="font-bold text-slate-600 text-sm tracking-tighter uppercase">Fluxo Limpo Tech</span>
+          </div>
+          <p className="text-gray-400 text-[10px] mb-6">© 2026 - Guia de Declaração Segura by Fluxo Limpo Tech</p>
           
           <div className="flex flex-col md:flex-row justify-center gap-4">
             <button 
