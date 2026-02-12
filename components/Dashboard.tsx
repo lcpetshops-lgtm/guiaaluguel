@@ -8,10 +8,12 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<'ORDERS' | 'SETTINGS'>('ORDERS');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [filter, setFilter] = useState<string>('ALL');
   const [isSendingEmail, setIsSendingEmail] = useState<string | null>(null);
   
   const [settings, setSettings] = useState<PaymentSettings>({
+    id: 1, // Garantir ID inicial
     pagbankEnabled: true,
     pixEnabled: true,
     apiKey: '',
@@ -44,10 +46,11 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       const { data: settingsData } = await supabase
         .from('settings')
         .select('*')
-        .single();
+        .eq('id', 1)
+        .maybeSingle();
       
       if (settingsData) {
-        setSettings(settingsData);
+        setSettings(prev => ({ ...prev, ...settingsData }));
       }
     } catch (err) {
       console.error("Erro ao carregar dados:", err);
@@ -57,23 +60,43 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   }
 
   const saveSettings = async () => {
-    const { error } = await supabase
-      .from('settings')
-      .upsert({ id: settings.id || 1, ...settings });
-    
-    if (error) alert('Erro ao salvar no banco de dados: ' + error.message);
-    else alert('Configurações salvas com sucesso no Supabase!');
+    setIsSaving(true);
+    try {
+      // Removemos o ID do spread para garantir que ele seja enviado explicitamente como 1
+      const { id, ...dataToSave } = settings;
+      
+      const { error } = await supabase
+        .from('settings')
+        .upsert({ id: 1, ...dataToSave }, { onConflict: 'id' });
+      
+      if (error) {
+        throw error;
+      }
+      
+      alert('Configurações salvas com sucesso!');
+    } catch (error: any) {
+      console.error("Erro ao salvar:", error);
+      alert('Erro ao salvar no banco de dados: ' + (error.message || "Erro desconhecido"));
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'ebook' | 'pix') => {
     const file = e.target.files?.[0];
     if (file) {
+      // Limite de 5MB para Base64 no banco de dados para evitar problemas de performance
+      if (file.size > 5 * 1024 * 1024) {
+        alert("O arquivo é muito grande (Máx 5MB).");
+        return;
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         if (type === 'ebook') {
-          setSettings({ ...settings, ebookFileData: reader.result as string, ebookFileName: file.name });
+          setSettings(prev => ({ ...prev, ebookFileData: reader.result as string, ebookFileName: file.name }));
         } else {
-          setSettings({ ...settings, pixQrCode: reader.result as string });
+          setSettings(prev => ({ ...prev, pixQrCode: reader.result as string }));
         }
       };
       reader.readAsDataURL(file);
@@ -321,8 +344,12 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
               </div>
             </section>
 
-            <button onClick={saveSettings} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-[2rem] shadow-2xl shadow-blue-600/30 transition-all uppercase tracking-[0.2em] text-sm active:scale-95 mb-10">
-              SALVAR CONFIGURAÇÕES NO SUPABASE
+            <button 
+              disabled={isSaving}
+              onClick={saveSettings} 
+              className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-6 rounded-[2rem] shadow-2xl shadow-blue-600/30 transition-all uppercase tracking-[0.2em] text-sm active:scale-95 mb-10 disabled:opacity-50`}
+            >
+              {isSaving ? 'Sincronizando com o Banco...' : 'SALVAR CONFIGURAÇÕES NO SUPABASE'}
             </button>
           </div>
         )}
