@@ -14,6 +14,8 @@ export type PaymentMethod = 'PIX' | 'PAGBANK';
 export type OrderStatus = 'PENDING' | 'PAID' | 'SENT';
 
 export interface PaymentSettings {
+  // Added optional id property to support Supabase upsert logic and resolve type errors
+  id?: number | string;
   pagbankEnabled: boolean;
   pixEnabled: boolean;
   apiKey: string;

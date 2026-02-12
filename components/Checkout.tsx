@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { PRICE_DISCOUNT, PIX_KEY } from '../constants';
 import { PaymentMethod, Order, PaymentSettings } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface CheckoutProps {
   onSuccess: (order: Order) => void;
@@ -11,6 +12,7 @@ interface CheckoutProps {
 const Checkout: React.FC<CheckoutProps> = ({ onSuccess, onCancel }) => {
   const [step, setStep] = useState<1 | 2>(1);
   const [method, setMethod] = useState<PaymentMethod>('PIX');
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', phone: '' });
   const [settings, setSettings] = useState<PaymentSettings>({
     pagbankEnabled: true,
@@ -27,10 +29,17 @@ const Checkout: React.FC<CheckoutProps> = ({ onSuccess, onCancel }) => {
   });
 
   useEffect(() => {
-    const savedSettings = localStorage.getItem('payment_settings');
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
+    async function loadSettings() {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+        .single();
+      
+      if (data && !error) {
+        setSettings(data);
+      }
     }
+    loadSettings();
   }, []);
 
   const handleNext = (e: React.FormEvent) => {
@@ -38,8 +47,9 @@ const Checkout: React.FC<CheckoutProps> = ({ onSuccess, onCancel }) => {
     setStep(2);
   };
 
-  const finishPayment = () => {
-    const newOrder: Order = {
+  const finishPayment = async () => {
+    setLoading(true);
+    const newOrder = {
       id: Math.random().toString(36).substr(2, 6).toUpperCase(),
       customerName: form.name,
       customerEmail: form.email,
@@ -49,9 +59,18 @@ const Checkout: React.FC<CheckoutProps> = ({ onSuccess, onCancel }) => {
       status: method === 'PAGBANK' ? 'PAID' : 'PENDING',
       date: new Date().toLocaleDateString('pt-BR'),
     };
-    const existing = JSON.parse(localStorage.getItem('orders') || '[]');
-    localStorage.setItem('orders', JSON.stringify([...existing, newOrder]));
-    onSuccess(newOrder);
+
+    const { error } = await supabase
+      .from('orders')
+      .insert([newOrder]);
+
+    if (error) {
+      alert('Erro ao processar pedido. Tente novamente.');
+      setLoading(false);
+      return;
+    }
+
+    onSuccess(newOrder as Order);
   };
 
   return (
@@ -101,7 +120,13 @@ const Checkout: React.FC<CheckoutProps> = ({ onSuccess, onCancel }) => {
 
               <div className="flex gap-4">
                 <button onClick={() => setStep(1)} className="flex-1 bg-gray-100 font-bold py-4 rounded-xl text-xs">VOLTAR</button>
-                <button onClick={finishPayment} className="flex-[2] bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg uppercase text-xs">Confirmar Pedido</button>
+                <button 
+                  disabled={loading}
+                  onClick={finishPayment} 
+                  className={`flex-[2] bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg uppercase text-xs ${loading ? 'opacity-50' : ''}`}
+                >
+                  {loading ? 'PROCESSANDO...' : 'Confirmar Pedido'}
+                </button>
               </div>
             </div>
           )}

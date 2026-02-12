@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Order, PaymentSettings } from '../types';
 import { PIX_KEY, PRODUCT_LINK } from '../constants';
+import { supabase } from '../lib/supabase';
 
 const OrderTracker: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [orderId, setOrderId] = useState('');
+  const [loading, setLoading] = useState(false);
   const [foundOrder, setFoundOrder] = useState<Order | null>(null);
   const [error, setError] = useState('');
   const [settings, setSettings] = useState<PaymentSettings>({
@@ -22,23 +24,33 @@ const OrderTracker: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   });
 
   useEffect(() => {
-    const savedSettings = localStorage.getItem('payment_settings');
-    if (savedSettings) setSettings(JSON.parse(savedSettings));
+    async function loadSettings() {
+      const { data } = await supabase.from('settings').select('*').single();
+      if (data) setSettings(data);
+    }
+    loadSettings();
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const orders: Order[] = JSON.parse(localStorage.getItem('orders') || '[]');
-    const cleanId = orderId.replace('#', '').trim().toUpperCase();
-    const order = orders.find(o => o.id === cleanId);
+    setLoading(true);
     
-    if (order) {
-      setFoundOrder(order);
+    const cleanId = orderId.replace('#', '').trim().toUpperCase();
+    
+    const { data, error: sbError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', cleanId)
+      .single();
+    
+    if (data && !sbError) {
+      setFoundOrder(data);
     } else {
       setFoundOrder(null);
-      setError('Pedido não encontrado.');
+      setError('Pedido não encontrado no banco de dados.');
     }
+    setLoading(false);
   };
 
   const handleDownload = () => {
@@ -55,7 +67,7 @@ const OrderTracker: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       <div className="bg-white w-full max-w-lg rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-white">
         <div className="bg-slate-800 p-6 text-white flex justify-between items-center">
           <h2 className="font-bold flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" /><path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" /></svg>
+            <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" /><path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002 2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" /></svg>
             Seu Armazenamento Seguro
           </h2>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-white/10">✕</button>
@@ -69,7 +81,12 @@ const OrderTracker: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <input required type="text" placeholder="Ex: #A1B2C3" className="w-full border-2 bg-slate-50 rounded-2xl p-4 font-mono font-bold" value={orderId} onChange={e => setOrderId(e.target.value)} />
               </div>
               {error && <p className="text-red-500 text-xs font-bold">{error}</p>}
-              <button className="w-full bg-blue-600 text-white font-bold py-4 rounded-2xl hover:bg-blue-700">CONECTAR</button>
+              <button 
+                disabled={loading}
+                className={`w-full bg-blue-600 text-white font-bold py-4 rounded-2xl hover:bg-blue-700 ${loading ? 'opacity-50' : ''}`}
+              >
+                {loading ? 'CONSULTANDO BANCO...' : 'CONECTAR'}
+              </button>
             </form>
           ) : (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
@@ -82,7 +99,7 @@ const OrderTracker: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 text-center space-y-4">
                   <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-2xl">⏳</div>
                   <h4 className="font-bold text-amber-800">Aguardando Validação</h4>
-                  <p className="text-xs text-amber-600">Seu pagamento está sendo processado. Assim que aprovado, o "Pendrive Virtual" será liberado.</p>
+                  <p className="text-xs text-amber-600">Seu pagamento está sendo processado. Assim que aprovado pelo admin no Supabase, o download será liberado.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -103,7 +120,7 @@ const OrderTracker: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </div>
                     <div className="flex justify-between text-[8px] font-bold text-slate-400 uppercase">
                       <span>Status: Disponível para Download</span>
-                      <span>100% Livre de Vírus</span>
+                      <span>Protegido pelo Supabase</span>
                     </div>
                   </div>
 
@@ -114,7 +131,7 @@ const OrderTracker: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                     BAIXAR ARQUIVO DO PENDRIVE
                   </button>
-                  <p className="text-[9px] text-center text-slate-400 italic">O arquivo será baixado para a pasta de downloads do seu dispositivo.</p>
+                  <p className="text-[9px] text-center text-slate-400 italic">O arquivo será recuperado do armazenamento seguro da Fluxo Limpo Tech.</p>
                 </div>
               )}
             </div>

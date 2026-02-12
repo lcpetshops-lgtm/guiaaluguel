@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import { Order, PaymentSettings } from '../types';
 import { PRODUCT_LINK, PIX_KEY } from '../constants';
+import { supabase } from '../lib/supabase';
 
 const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<'ORDERS' | 'SETTINGS'>('ORDERS');
   const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('ALL');
   const [isSendingEmail, setIsSendingEmail] = useState<string | null>(null);
   
@@ -24,18 +26,40 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   });
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem('orders') || '[]');
-    setOrders(data);
-
-    const savedSettings = localStorage.getItem('payment_settings');
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
-    }
+    loadAllData();
   }, []);
 
-  const saveSettings = () => {
-    localStorage.setItem('payment_settings', JSON.stringify(settings));
-    alert('Configurações salvas com sucesso!');
+  async function loadAllData() {
+    setLoading(true);
+    
+    // Load Orders
+    const { data: ordersData } = await supabase
+      .from('orders')
+      .select('*')
+      .order('id', { ascending: false });
+    
+    if (ordersData) setOrders(ordersData);
+
+    // Load Settings (Get first row or create if none exists)
+    const { data: settingsData } = await supabase
+      .from('settings')
+      .select('*')
+      .single();
+    
+    if (settingsData) {
+      setSettings(settingsData);
+    }
+    
+    setLoading(false);
+  }
+
+  const saveSettings = async () => {
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ id: settings.id || 1, ...settings });
+    
+    if (error) alert('Erro ao salvar no banco de dados.');
+    else alert('Configurações salvas no Supabase!');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'ebook' | 'pix') => {
@@ -53,10 +77,15 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
   };
 
-  const updateStatus = (id: string, status: Order['status']) => {
-    const updated = orders.map(o => o.id === id ? { ...o, status } : o);
-    setOrders(updated);
-    localStorage.setItem('orders', JSON.stringify(updated));
+  const updateStatus = async (id: string, status: Order['status']) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', id);
+
+    if (!error) {
+      setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
+    }
   };
 
   const sendWhatsApp = (order: Order) => {
@@ -89,6 +118,15 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
   const filteredOrders = orders.filter(o => filter === 'ALL' ? true : o.status === filter);
 
+  if (loading) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="font-bold text-slate-400 uppercase tracking-widest text-xs">Conectando ao Supabase...</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
       <nav className="bg-slate-900 text-white p-4 flex flex-col md:flex-row justify-between items-center px-8 gap-4">
@@ -119,7 +157,7 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   {filteredOrders.length === 0 && (
                     <tr>
                       <td colSpan={4} className="p-12 text-center text-gray-400 italic">
-                        Nenhum pedido encontrado.
+                        Nenhum pedido encontrado no banco de dados.
                       </td>
                     </tr>
                   )}
@@ -224,7 +262,7 @@ const Dashboard: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </section>
 
             <button onClick={saveSettings} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 rounded-2xl shadow-xl shadow-blue-600/20 transition-all uppercase tracking-widest text-sm">
-              SALVAR TODAS AS CONFIGURAÇÕES
+              SALVAR TODAS AS CONFIGURAÇÕES NO BANCO DE DADOS
             </button>
           </div>
         )}
