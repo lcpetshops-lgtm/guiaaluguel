@@ -214,7 +214,28 @@ const App: React.FC = () => {
           </div>
           
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <img src="https://picsum.photos/seed/tax/800/600" alt="Legal" className="rounded-3xl shadow-2xl" />
+            {/* Componente Visual que simula a imagem do Leão com overlay de texto conforme anexo */}
+            <div className="relative group overflow-hidden rounded-3xl shadow-2xl h-[400px] bg-slate-900">
+              <img 
+                src="https://images.unsplash.com/photo-1546182208-414a7a1939aa?auto=format&fit=crop&q=80&w=1000" 
+                alt="Leão da Receita" 
+                className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 flex flex-col justify-end p-8">
+                 <div className="mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                       <svg className="w-8 h-8 text-white fill-current" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                       <span className="text-white font-black text-2xl tracking-tighter uppercase">Receita Federal</span>
+                    </div>
+                    <div className="text-white font-black text-7xl md:text-8xl tracking-tight leading-none">
+                      2026
+                    </div>
+                 </div>
+                 <div className="h-1 w-20 bg-blue-500 mb-4"></div>
+                 <p className="text-white/80 text-xs font-bold uppercase tracking-widest">Fiscalização Ativa • Cruzamento de Dados</p>
+              </div>
+            </div>
+
             <div>
               <h3 className="text-2xl font-bold mb-6">O que o guia oferece:</h3>
               <ul className="space-y-4">
