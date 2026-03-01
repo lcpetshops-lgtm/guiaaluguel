@@ -117,9 +117,17 @@ const App: React.FC = () => {
             <button onClick={handleBuy} className="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white text-lg font-black px-12 py-6 rounded-2xl shadow-2xl shadow-blue-600/30 transition-all hover:-translate-y-1 active:scale-95">
               QUERO O GUIA COMPLETO
             </button>
-            <div className="flex -space-x-2">
-              {[1,2,3,4].map(i => <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[10px] font-bold">U{i}</div>)}
-              <div className="pl-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">+1.500 PROPRIETÁRIOS</div>
+            <div className="flex items-center">
+              <div className="flex -space-x-3">
+                <div className="w-10 h-10 rounded-full border-2 border-slate-900 bg-blue-100 flex items-center justify-center text-[10px] font-black text-blue-600">RM</div>
+                <div className="w-10 h-10 rounded-full border-2 border-slate-900 bg-emerald-100 flex items-center justify-center text-[10px] font-black text-emerald-600">HS</div>
+                <div className="w-10 h-10 rounded-full border-2 border-slate-900 bg-amber-100 flex items-center justify-center text-[10px] font-black text-amber-600">CA</div>
+                <div className="w-10 h-10 rounded-full border-2 border-slate-900 bg-indigo-100 flex items-center justify-center text-[10px] font-black text-indigo-600">JM</div>
+              </div>
+              <div className="pl-4 text-left">
+                <div className="text-[11px] font-black text-white uppercase tracking-tighter">Mais de 1.500</div>
+                <div className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Proprietários Protegidos</div>
+              </div>
             </div>
           </div>
         </div>
