@@ -128,9 +128,9 @@ const Checkout: React.FC<CheckoutProps> = ({ onSuccess, onCancel }) => {
               </div>
               
               <div className="space-y-4">
-                <input required type="text" placeholder="Nome Completo" className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 outline-none focus:border-blue-500 transition-all font-medium" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
-                <input required type="email" placeholder="E-mail para Entrega" className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 outline-none focus:border-blue-500 transition-all font-medium" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
-                <input required type="tel" placeholder="WhatsApp (DDD + Número)" className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 outline-none focus:border-blue-500 transition-all font-medium" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+                <input required type="text" autoComplete="name" placeholder="Nome Completo" className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 outline-none focus:border-blue-500 transition-all font-medium" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+                <input required type="email" autoComplete="email" inputMode="email" placeholder="E-mail para Entrega" className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 outline-none focus:border-blue-500 transition-all font-medium" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
+                <input required type="tel" autoComplete="tel" inputMode="tel" placeholder="WhatsApp (DDD + Número)" className="w-full border-2 border-slate-100 bg-slate-50 rounded-xl p-4 outline-none focus:border-blue-500 transition-all font-medium" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
               </div>
 
               <button type="submit" className="w-full bg-blue-600 text-white font-black py-5 rounded-xl hover:bg-blue-700 transition-all uppercase tracking-widest text-xs shadow-lg shadow-blue-600/20 active:scale-[0.98]">

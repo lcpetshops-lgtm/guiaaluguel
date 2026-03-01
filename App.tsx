@@ -105,11 +105,11 @@ const App: React.FC = () => {
             <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Atualizado para Declaração 2026</span>
           </div>
           
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-[1.1] mb-8 tracking-tighter">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-[1.1] mb-8 tracking-tighter text-balance">
             Recebe Aluguel? <span className="text-blue-500 italic">Proteja-se</span> da Receita Federal Legalmente.
           </h1>
           
-          <p className="text-lg md:text-xl text-slate-400 mb-10 max-w-2xl mx-auto font-medium leading-relaxed">
+          <p className="text-lg md:text-xl text-slate-400 mb-10 max-w-2xl mx-auto font-medium leading-relaxed text-balance">
             Aprenda a declarar corretamente seus aluguéis, reduza o imposto a pagar e evite multas de até 75% sobre o valor não declarado.
           </p>
 
@@ -134,14 +134,14 @@ const App: React.FC = () => {
       </header>
 
       {/* URGENCY ALERT */}
-      <section className="max-w-5xl mx-auto px-4 -mt-20 relative z-20">
-        <div className="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl border-2 border-red-50 flex flex-col md:flex-row items-center gap-8">
-          <div className="shrink-0 w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center text-red-500 animate-pulse">
+      <section className="max-w-5xl mx-auto px-4 -mt-20 relative z-20 animate-in slide-in-from-bottom-10 duration-700">
+        <div className="bg-white p-6 md:p-12 rounded-[2rem] md:rounded-[2.5rem] shadow-2xl border-2 border-red-50 flex flex-col md:flex-row items-center gap-6 md:gap-8">
+          <div className="shrink-0 w-16 h-16 md:w-20 md:h-20 bg-red-50 rounded-2xl md:rounded-3xl flex items-center justify-center text-red-500 animate-pulse">
             <WarningIcon />
           </div>
-          <div className="flex-1">
-            <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tighter italic">O cerco está fechando...</h2>
-            <p className="text-slate-600 leading-relaxed font-medium">
+          <div className="flex-1 text-center md:text-left">
+            <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-2 uppercase tracking-tighter italic">O cerco está fechando...</h2>
+            <p className="text-sm md:text-base text-slate-600 leading-relaxed font-medium text-balance">
               Em 2026, a Receita Federal utilizará novos sistemas de IA para cruzar dados de contas bancárias e registros de imóveis. Se você recebe aluguel e não declara via Carnê-Leão mensalmente, você está em <span className="text-red-600 font-bold underline">Risco Vermelho</span>.
             </p>
           </div>
@@ -149,42 +149,42 @@ const App: React.FC = () => {
       </section>
 
       {/* WHAT YOU WILL LEARN */}
-      <section className="py-32 px-4 max-w-6xl mx-auto">
-        <div className="text-center mb-20">
-          <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-4 uppercase italic">O que você vai aprender?</h2>
-          <div className="h-2 w-24 bg-blue-600 mx-auto rounded-full" />
+      <section className="py-20 md:py-32 px-4 max-w-6xl mx-auto">
+        <div className="text-center mb-12 md:mb-20">
+          <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-4 uppercase italic text-balance">O que você vai aprender?</h2>
+          <div className="h-1.5 md:h-2 w-20 md:w-24 bg-blue-600 mx-auto rounded-full" />
         </div>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
           {LEARNING_POINTS.map((point, idx) => (
-            <div key={idx} className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 hover:border-blue-200 transition-all group">
-              <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mb-6 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all font-black">
+            <div key={idx} className="bg-slate-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-100 hover:border-blue-200 transition-all group">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-lg md:rounded-xl flex items-center justify-center mb-4 md:mb-6 shadow-sm group-hover:bg-blue-600 group-hover:text-white transition-all font-black text-sm md:text-base">
                 {idx + 1}
               </div>
-              <p className="font-bold text-slate-700 leading-snug">{point}</p>
+              <p className="font-bold text-slate-700 leading-snug text-sm md:text-base">{point}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="py-32 bg-slate-50 px-4">
+      <section className="py-20 md:py-32 bg-slate-50 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-4 uppercase italic">Quem já protegeu seu patrimônio</h2>
-            <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">Relatos reais de alunos do guia</p>
+          <div className="text-center mb-12 md:mb-20">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-4 uppercase italic text-balance">Quem já protegeu seu patrimônio</h2>
+            <p className="text-slate-400 font-bold uppercase text-[10px] md:text-xs tracking-widest">Relatos reais de alunos do guia</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {TESTIMONIALS.map((t, idx) => (
-              <div key={idx} className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 relative">
-                <div className="flex text-amber-400 mb-6">
-                  {[...Array(t.stars)].map((_, i) => <svg key={i} className="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>)}
+              <div key={idx} className="bg-white p-8 md:p-10 rounded-[2rem] md:rounded-[2.5rem] shadow-sm border border-slate-200 relative">
+                <div className="flex text-amber-400 mb-4 md:mb-6">
+                  {[...Array(t.stars)].map((_, i) => <svg key={i} className="w-4 h-4 md:w-5 md:h-5 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>)}
                 </div>
-                <p className="text-slate-600 italic mb-8 font-medium leading-relaxed">"{t.text}"</p>
+                <p className="text-sm md:text-base text-slate-600 italic mb-6 md:mb-8 font-medium leading-relaxed">"{t.text}"</p>
                 <div>
-                  <h4 className="font-black text-slate-900">{t.name}</h4>
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{t.role}</p>
+                  <h4 className="font-black text-slate-900 text-sm md:text-base">{t.name}</h4>
+                  <p className="text-[9px] md:text-[10px] font-bold text-blue-600 uppercase tracking-widest">{t.role}</p>
                 </div>
               </div>
             ))}
@@ -254,6 +254,30 @@ const App: React.FC = () => {
               <span className="text-white font-black text-lg tracking-tighter uppercase">Fluxo Limpo <span className="text-blue-400">Tech</span></span>
             </div>
             
+            <div className="mb-12">
+              <a 
+                href="http://201.95.185.90:3000/#/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-block bg-blue-600/10 border border-blue-500/20 p-6 md:p-8 rounded-[2rem] hover:bg-blue-600/20 transition-all group max-w-2xl"
+              >
+                <div className="flex flex-col md:flex-row items-center gap-6 text-left">
+                  <div className="shrink-0 w-12 h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-600/20 group-hover:scale-110 transition-transform">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-black text-lg uppercase tracking-tight mb-1">Conheça nossa Tecnologia de Fluxo</h4>
+                    <p className="text-slate-400 text-sm font-medium leading-relaxed">
+                      Automatize sua gestão financeira e proteja seu patrimônio com a solução completa da Fluxo Limpo Tech.
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-blue-400 group-hover:translate-x-1 transition-transform">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                  </div>
+                </div>
+              </a>
+            </div>
+
             <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest max-w-md mx-auto leading-relaxed mb-10">
               © 2026 - FLUXO LIMPO TECNOLOGIA LTDA • Contato: 11 993170164<br/>
               Aviso Legal: Os resultados podem variar de acordo com cada situação tributária. Consulte sempre um profissional se necessário.
